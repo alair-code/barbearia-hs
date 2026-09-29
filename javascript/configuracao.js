@@ -8,27 +8,27 @@
 
 const CONFIG = {
   // NOME: nome que aparece no cabeçalho, rodapé e textos configuráveis.
-  nome: "Barbearia Básico",
+  nome: "Barbearia HS",
   // LOGO: caminho da logo dentro de recursos/identidade/.
   logo: "recursos/identidade/logo.svg",
   // FAVICON: ícone da aba do navegador.
   favicon: "recursos/identidade/favicon.svg",
   // DESCRIÇÃO: frase principal apresentada no topo do site.
-  descricao: "Seu visual, seu estilo, sua melhor versão. Um atendimento pensado para você sair satisfeito e voltar quando quiser.",
+  descricao: "Cuidado, estilo e praticidade para valorizar seu visual em Manhumirim - MG.",
   // TÍTULO PRINCIPAL: chamada de destaque da capa.
   heroTitle: "Seu próximo visual começa aqui.",
   // SEO: título usado no navegador e nos mecanismos de busca.
-  seoTitle: "Barbearia Básico | Seu próximo visual começa aqui.",
+  seoTitle: "Barbearia HS | Manhumirim - MG",
   // SEO: descrição usada nos mecanismos de busca e compartilhamentos.
-  seoDescription: "Conheça nossos serviços, veja nossos resultados e escolha seu próximo visual. Agende seu horário pelo WhatsApp.",
+  seoDescription: "Conheça a Barbearia HS em Manhumirim - MG e fale conosco pelo WhatsApp.",
   // IMAGEM DE COMPARTILHAMENTO: usada quando o link for compartilhado em redes sociais.
   ogImage: "recursos/identidade/logo.svg",
   // SOBRE: título e textos da seção que apresenta a experiência da barbearia.
   sobre: {
-    titulo: "Mais do que cuidar do visual, é cuidar de você.",
+    titulo: "Cuidado e estilo em cada atendimento.",
     textos: [
-      "Um espaço para quem valoriza um bom visual, gosta de se cuidar e quer se sentir bem com o resultado.",
-      "Cada atendimento é uma oportunidade de renovar a aparência, elevar a confiança e sair pronto para a próxima."
+      "A Barbearia HS atende em Manhumirim - MG com foco em um visual bem cuidado e uma experiência prática.",
+      "Escolha o serviço que procura e entre em contato para confirmar disponibilidade e atendimento."
     ]
   },
   // DIFERENCIAIS: benefícios que ajudam a apresentar o serviço ao visitante.
@@ -41,8 +41,8 @@ const CONFIG = {
   ctaTitulo: "Seu próximo visual pode começar agora.",
   ctaDescricao: "Escolha o serviço que você procura e reserve alguns minutos para cuidar do seu visual.",
   // LOCALIZAÇÃO: título e descrição da área de endereço e contato.
-  localTitulo: "Venha viver a experiência.",
-  localDescricao: "Confira onde estamos, nossos horários e escolha o melhor momento para sua próxima visita.",
+  localTitulo: "Encontre a Barbearia HS.",
+  localDescricao: "Veja a localização em Manhumirim - MG e fale conosco pelo WhatsApp.",
   // RODAPÉ: textos exibidos no final da página.
   footer: {
     texto: "Todos os direitos reservados.",
@@ -79,21 +79,23 @@ const CONFIG = {
   // Também aceita uma URL completa (https://...).
   heroImage: "hero.svg",
   // WHATSAPP: número com código do país, somente números. Ex.: 5533999999999.
-  whatsapp: "5500000000000",
+  whatsapp: "5533999224937",
   // MENSAGEM DO WHATSAPP: texto inicial enviado quando o cliente agenda.
-  whatsappMensagem: "Olá! Gostaria de agendar meu próximo horário na barbearia.",
+  whatsappMensagem: "Olá! Gostaria de saber mais sobre os serviços e horários da Barbearia HS.",
   // INSTAGRAM: @ da barbearia exibido no contato.
-  instagram: "@barbearia",
+  instagram: "",
   // LINK DO INSTAGRAM: endereço completo do perfil.
-  instagramUrl: "https://instagram.com/",
+  instagramUrl: "",
   // ENDEREÇO: endereço que será mostrado no site.
-  endereco: "Rua Exemplo, 123 — Centro",
+  endereco: "Manhumirim - MG, 36970-000",
   // GOOGLE MAPS: cole aqui o link exato do local da barbearia.
-  mapaUrl: "https://maps.google.com/",
+  mapaUrl: "https://maps.app.goo.gl/QvtQXRLf1UMiYnMz8",
   // HORÁRIOS: 0=domingo, 1=segunda ... 6=sábado.
   // Use null quando a barbearia estiver fechada.
   // Esses horários alimentam tanto a seção de contato quanto o agendamento.
   funcionamento: {
+    // 0 = domingo | 1 = segunda | ... | 6 = sábado
+    // Padrão inicial do template: domingo fechado e segunda a sábado aberto.
     0: null,
     1: { abertura: "09:00", fechamento: "19:00" },
     2: { abertura: "09:00", fechamento: "19:00" },
@@ -113,36 +115,13 @@ const CONFIG = {
   // - duracao: duração usada no cálculo do agendamento.
   // ============================================================
   servicos: [
-    {
-      nome: "Corte Masculino",
-      descricao: "Corte personalizado de acordo com seu estilo.",
-      preco: "R$ 40",
-      duracao: "30 min"
-    },
-    {
-      nome: "Barba",
-      descricao: "Acabamento e cuidado para uma barba bem alinhada.",
-      preco: "R$ 25",
-      duracao: "20 min"
-    },
-    {
-      nome: "Corte + Barba",
-      descricao: "O combo essencial para renovar o visual.",
-      preco: "R$ 60",
-      duracao: "50 min"
-    },
-    {
-      nome: "Sobrancelha",
-      descricao: "Acabamento discreto para valorizar o rosto.",
-      preco: "R$ 15",
-      duracao: "10 min"
-    },
-    {
-      nome: "Acabamento",
-      descricao: "Detalhes rápidos para manter o corte em dia.",
-      preco: "R$ 15",
-      duracao: "10 min"
-    }
+    // CADASTRE AQUI os serviços reais da Barbearia HS.
+    // Os preços abaixo ficam como "Consultar" até serem confirmados.
+    { nome: "Corte Masculino", descricao: "Corte personalizado de acordo com seu estilo.", preco: "Consultar", duracao: "30 min" },
+    { nome: "Barba", descricao: "Acabamento e cuidado para uma barba bem alinhada.", preco: "Consultar", duracao: "20 min" },
+    { nome: "Corte + Barba", descricao: "Corte e barba para renovar o visual.", preco: "Consultar", duracao: "50 min" },
+    { nome: "Sobrancelha", descricao: "Acabamento discreto para valorizar o rosto.", preco: "Consultar", duracao: "10 min" },
+    { nome: "Acabamento", descricao: "Detalhes rápidos para manter o corte em dia.", preco: "Consultar", duracao: "10 min" }
   ],
 
     // GALERIA: coloque as fotos do cliente em recursos/imagens/galeria/.

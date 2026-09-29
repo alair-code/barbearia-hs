@@ -41,8 +41,8 @@
   // ============================================================
   // AGENDAMENTO PELO WHATSAPP
   // ============================================================
-  // Esta parte calcula horários conforme o dia, expediente e duração do serviço.
-  const whatsappNumber = String(config.whatsapp).replace(/\D/g, "");
+  // Fluxo único: botão -> nome -> serviço -> data -> horário -> WhatsApp.
+  const whatsappNumber = String(config.whatsapp || "").replace(/\D/g, "");
   const bookingModal = document.querySelector("#booking-modal");
   const bookingForm = document.querySelector("#booking-form");
   const bookingName = document.querySelector("#booking-name");
@@ -51,210 +51,258 @@
   const bookingTime = document.querySelector("#booking-time");
   const bookingStatus = document.querySelector("#booking-status");
   const bookingDateContext = document.querySelector("#booking-date-context");
+  const bookingSummary = document.querySelector("#booking-summary");
   const bookingClose = document.querySelector(".booking-close");
   const bookingDateActions = document.querySelectorAll("[data-booking-date-action]");
   let activeBookingTrigger = null;
 
-  // Converte a data atual para YYYY-MM-DD usando o horário local.
   const todayIso = () => {
     const now = new Date();
     const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 10);
   };
 
-  // Converte "09:30" em minutos para facilitar os cálculos.
+  const addDaysToIso = (isoDate, days) => {
+    const [year, month, day] = isoDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+  };
+
   const minutesFromTime = (time) => {
     const [hours, minutes] = String(time).split(":").map(Number);
     return (hours * 60) + minutes;
   };
 
-  // Formata a data para a mensagem enviada ao barbeiro.
   const formatDate = (isoDate) => {
     const [year, month, day] = isoDate.split("-").map(Number);
     return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
       .format(new Date(year, month - 1, day));
   };
 
-  // Lê a duração configurada no serviço selecionado.
-  const getServiceDuration = () => {
-    if (!bookingService) return 30;
-    const service = config.servicos?.find((item) => item.nome === bookingService.value);
-    const match = String(service?.duracao || "").match(/\d+/);
-    return match ? Number(match[0]) : 30;
-  };
-
-  // Busca o horário de funcionamento correspondente à data escolhida.
-  const getSchedule = (isoDate) => {
-    if (!isoDate) return null;
-    const [year, month, day] = isoDate.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    return config.funcionamento?.[date.getDay()] || null;
-  };
-
-  // Procura o próximo dia em que a barbearia funciona.
-  const findNextOpenDate = (fromDate) => {
-    if (!fromDate) return null;
-    const [year, month, day] = fromDate.split("-").map(Number);
-    const cursor = new Date(year, month - 1, day);
-    for (let offset = 1; offset <= 31; offset += 1) {
-      cursor.setDate(cursor.getDate() + 1);
-      const iso = [cursor.getFullYear(), String(cursor.getMonth() + 1).padStart(2, "0"), String(cursor.getDate()).padStart(2, "0")].join("-");
-      if (getSchedule(iso)) return iso;
-    }
-    return null;
-  };
-
   const formatBookingDateLabel = (isoDate) => {
     if (!isoDate) return "";
     const [year, month, day] = isoDate.split("-").map(Number);
     return new Intl.DateTimeFormat("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric"
+      weekday: "long", day: "2-digit", month: "long", year: "numeric"
     }).format(new Date(year, month - 1, day));
   };
 
-  const setBookingDateContext = (isoDate) => {
-    if (!bookingDateContext) return;
-    bookingDateContext.textContent = isoDate
-      ? "Você está escolhendo horários para " + formatBookingDateLabel(isoDate) + "."
-      : "Escolha o dia do atendimento. Os horários serão calculados para a data selecionada.";
-  };
-
-
-  // Mostra uma ação clara para continuar o agendamento em outro dia.
-  const showNextDateOption = (fromDate) => {
-    const existing = bookingStatus?.parentElement?.querySelector(".booking-next-day");
-    existing?.remove();
-    const nextDate = findNextOpenDate(fromDate);
-    if (!bookingStatus || !nextDate) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "booking-next-day";
-    button.textContent = "Ver próximo dia disponível";
-    button.addEventListener("click", () => {
-      bookingDate.value = nextDate;
-      updateBookingTimes();
-      bookingDate.focus();
-    });
-    bookingStatus.insertAdjacentElement("afterend", button);
-  };
-
-  // Recalcula a lista de horários sempre que serviço ou data mudar.
-  const updateBookingTimes = () => {
-    if (!bookingDate || !bookingTime || !bookingStatus) return;
-    const selectedDate = bookingDate.value;
-    setBookingDateContext(selectedDate);
-    const schedule = getSchedule(selectedDate);
-    bookingTime.replaceChildren();
-    bookingStatus.parentElement?.querySelector(".booking-next-day")?.remove();
-
-    if (!selectedDate) {
-      bookingTime.disabled = true;
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Selecione uma data primeiro";
-      bookingTime.appendChild(option);
-      bookingStatus.textContent = "Selecione uma data para ver os horários disponíveis.";
-      return;
-    }
-
-    if (!schedule) {
-      bookingTime.disabled = true;
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Barbearia fechada neste dia";
-      bookingTime.appendChild(option);
-      bookingStatus.textContent = "A barbearia não funciona nesta data. Escolha outro dia.";
-      showNextDateOption(selectedDate);
-      return;
-    }
-
-    if (!bookingService?.value) {
-      bookingTime.disabled = true;
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Selecione um serviço primeiro";
-      bookingTime.appendChild(option);
-      bookingStatus.textContent = "Escolha o serviço para calcular os horários disponíveis.";
-      return;
-    }
+  const getSchedule = (isoDate) => {
+    if (!isoDate) return null;
+    const [year, month, day] = isoDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    const schedule = config.funcionamento?.[date.getDay()] || null;
+    if (!schedule || !schedule.abertura || !schedule.fechamento) return null;
 
     const opening = minutesFromTime(schedule.abertura);
     const closing = minutesFromTime(schedule.fechamento);
-    const selectedIsToday = selectedDate === todayIso();
+    if (!Number.isFinite(opening) || !Number.isFinite(closing) || closing <= opening) return null;
+
+    return schedule;
+  };
+
+  const getSelectedService = () =>
+    config.servicos?.find((service) => service.nome === bookingService?.value) || null;
+
+  // ============================================================
+  // CONTROLE DE CONFLITOS NO FRONTEND
+  // ============================================================
+  // Os agendamentos ficam salvos no navegador via localStorage.
+  // Isso impede conflito entre agendamentos feitos neste mesmo
+  // navegador/dispositivo, sem precisar de banco de dados.
+  const BOOKINGS_STORAGE_KEY = "barbearia-hs-agendamentos";
+
+  const getBookings = () => {
+    try {
+      const raw = localStorage.getItem(BOOKINGS_STORAGE_KEY);
+      const bookings = raw ? JSON.parse(raw) : [];
+      return Array.isArray(bookings) ? bookings : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveBooking = (booking) => {
+    const bookings = getBookings();
+    bookings.push(booking);
+    localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings));
+  };
+
+  const getBookingDuration = (booking) => {
+    const match = String(booking?.duracao || "").match(/\\d+/);
+    return match ? Number(match[0]) : 30;
+  };
+
+  const isBookingConflict = (date, time, duration) => {
+    const start = minutesFromTime(time);
+    const end = start + duration;
+
+    return getBookings().some((booking) => {
+      if (booking.data !== date) return false;
+      const bookingStart = minutesFromTime(booking.horario);
+      const bookingEnd = bookingStart + getBookingDuration(booking);
+      return start < bookingEnd && end > bookingStart;
+    });
+  };
+
+  const getAvailableSlots = (date, schedule, service) => {
+    const opening = minutesFromTime(schedule.abertura);
+    const closing = minutesFromTime(schedule.fechamento);
+    const duration = getServiceDuration(service);
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const serviceDuration = getServiceDuration();
     const slots = [];
 
-    for (let start = opening; start + serviceDuration <= closing; start += 10) {
-      if (selectedIsToday && start <= currentMinutes) continue;
-      const hours = String(Math.floor(start / 60)).padStart(2, "0");
-      const minutes = String(start % 60).padStart(2, "0");
-      slots.push(hours + ":" + minutes);
+    for (let start = opening; start + duration <= closing; start += 10) {
+      if (date === todayIso() && start <= currentMinutes) continue;
+      const slot = String(Math.floor(start / 60)).padStart(2, "0") + ":" + String(start % 60).padStart(2, "0");
+      if (!isBookingConflict(date, slot, duration)) slots.push(slot);
     }
 
-    if (!slots.length) {
-      bookingTime.disabled = true;
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Nenhum horário disponível";
-      bookingTime.appendChild(option);
-      bookingStatus.textContent = selectedIsToday
-        ? "Não há mais horários disponíveis hoje. Escolha outra data para agendar."
-        : "Não há horários disponíveis nesta data. Escolha outra data para agendar.";
-      showNextDateOption(selectedDate);
+    return slots;
+  };
+
+  const getServiceDuration = (service) => {
+    const match = String(service?.duracao || "").match(/\d+/);
+    return match ? Number(match[0]) : 30;
+  };
+
+  const findNextOpenDate = (fromDate) => {
+    for (let offset = 1; offset <= 31; offset += 1) {
+      const candidate = addDaysToIso(fromDate, offset);
+      if (getSchedule(candidate)) return candidate;
+    }
+    return null;
+  };
+
+  const setBookingSummary = () => {
+    if (!bookingSummary) return;
+    const service = getSelectedService();
+    if (!service || !bookingDate?.value || !bookingTime?.value) {
+      bookingSummary.hidden = true;
+      bookingSummary.textContent = "";
+      return;
+    }
+    bookingSummary.textContent =
+      "Resumo: " + service.nome + " • " + (service.preco || "Consultar") +
+      " • " + (service.duracao || "Consultar") +
+      " • " + formatDate(bookingDate.value) + " às " + bookingTime.value;
+    bookingSummary.hidden = false;
+  };
+
+  const updateBookingTimes = () => {
+    if (!bookingDate || !bookingService || !bookingTime || !bookingStatus) return;
+
+    const selectedDate = bookingDate.value;
+    const service = getSelectedService();
+    bookingTime.replaceChildren();
+    bookingTime.disabled = true;
+    bookingStatus.parentElement?.querySelector(".booking-next-day")?.remove();
+    if (bookingSummary) {
+      bookingSummary.hidden = true;
+      bookingSummary.textContent = "";
+    }
+
+    if (!selectedDate) {
+      bookingTime.innerHTML = '<option value="">Selecione a data</option>';
+      bookingStatus.textContent = "Escolha a data do atendimento.";
       return;
     }
 
-    bookingTime.disabled = false;
+    if (!service) {
+      bookingTime.innerHTML = '<option value="">Selecione o serviço primeiro</option>';
+      bookingStatus.textContent = "Escolha um serviço para ver os horários.";
+      return;
+    }
+
+    const schedule = getSchedule(selectedDate);
+    if (!schedule) {
+      bookingTime.innerHTML = '<option value="">Barbearia fechada neste dia</option>';
+      bookingStatus.textContent = "A barbearia não funciona nesta data. Escolha outro dia.";
+      const nextDate = findNextOpenDate(selectedDate);
+      if (nextDate) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "booking-next-day";
+        button.textContent = "Ver próximo dia disponível";
+        button.addEventListener("click", () => {
+          bookingDate.value = nextDate;
+          updateBookingTimes();
+        });
+        bookingStatus.insertAdjacentElement("afterend", button);
+      }
+      return;
+    }
+
+    const slots = getAvailableSlots(selectedDate, schedule, service);
+
+    if (!slots.length) {
+      bookingTime.innerHTML = '<option value="">Nenhum horário disponível</option>';
+      bookingStatus.textContent = selectedDate === todayIso()
+        ? "Não há mais horários disponíveis hoje."
+        : "Não há horários disponíveis nesta data.";
+      return;
+    }
+
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Selecione um horário";
+    placeholder.textContent = "Selecione o horário";
     bookingTime.appendChild(placeholder);
+
     slots.forEach((slot) => {
       const option = document.createElement("option");
       option.value = slot;
       option.textContent = slot;
       bookingTime.appendChild(option);
     });
-    bookingStatus.textContent = "Horários disponíveis para " + formatBookingDateLabel(selectedDate) + ": " + schedule.abertura + " às " + schedule.fechamento + ".";
+
+    bookingTime.disabled = false;
+    const totalBookings = getBookings().filter((booking) => booking.data === selectedDate).length;
+    bookingStatus.textContent =
+      "Horários disponíveis: " + schedule.abertura + " às " + schedule.fechamento +
+      (totalBookings ? " • " + totalBookings + " agendamento(s) já registrado(s) neste dia." : "");
   };
 
-  // Abre o formulário de agendamento e preenche os serviços disponíveis.
   const openBooking = (trigger) => {
     if (!bookingModal) return;
     activeBookingTrigger = trigger || null;
     bookingModal.classList.add("is-open");
     bookingModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
-    if (bookingService) {
-      bookingService.replaceChildren();
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Selecione um serviço";
-      bookingService.appendChild(placeholder);
-      if (Array.isArray(config.servicos)) {
-        config.servicos.forEach((service) => {
-          const option = document.createElement("option");
-          option.value = service.nome;
-          option.textContent = service.nome + (service.duracao ? " — " + service.duracao : "");
-          bookingService.appendChild(option);
-        });
-      }
+
+    bookingService?.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Selecione um serviço";
+    bookingService?.appendChild(placeholder);
+
+    if (Array.isArray(config.servicos)) {
+      config.servicos.forEach((service) => {
+        const option = document.createElement("option");
+        option.value = service.nome;
+        option.textContent = service.nome + (service.preco ? " — " + service.preco : "");
+        bookingService?.appendChild(option);
+      });
     }
+
     if (bookingDate) {
       bookingDate.min = todayIso();
-      if (!bookingDate.value || bookingDate.value < bookingDate.min) bookingDate.value = bookingDate.min;
-      updateBookingTimes();
+      bookingDate.value = bookingDate.value && bookingDate.value >= bookingDate.min
+        ? bookingDate.value
+        : bookingDate.min;
     }
-    setBookingDateContext(bookingDate?.value || "");
+
+    if (bookingDateContext) {
+      bookingDateContext.textContent = bookingDate?.value
+        ? "Escolha um horário para " + formatBookingDateLabel(bookingDate.value) + "."
+        : "Escolha o dia do atendimento.";
+    }
+
+    updateBookingTimes();
     bookingName?.focus();
   };
 
-  // Fecha o formulário e devolve o foco ao botão que abriu a janela.
   const closeBooking = () => {
     if (!bookingModal) return;
     bookingModal.classList.remove("is-open");
@@ -266,49 +314,31 @@
     }
   };
 
-  // Mantém a navegação pelo teclado dentro das janelas abertas.
-  const trapFocus = (modal, event) => {
-    if (event.key !== "Tab" || !modal?.classList.contains("is-open")) return false;
-    const focusable = Array.from(modal.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )).filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true");
-    if (!focusable.length) return false;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-      return true;
-    }
-    if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-      return true;
-    }
-    return false;
-  };
-
-  if (bookingDate) bookingDate.addEventListener("change", updateBookingTimes);
+  if (bookingDate) {
+    bookingDate.addEventListener("change", () => {
+      if (bookingDateContext) {
+        bookingDateContext.textContent = "Escolha um horário para " + formatBookingDateLabel(bookingDate.value) + ".";
+      }
+      updateBookingTimes();
+    });
+  }
   if (bookingService) bookingService.addEventListener("change", updateBookingTimes);
+  if (bookingTime) bookingTime.addEventListener("change", setBookingSummary);
 
   bookingDateActions.forEach((button) => {
     button.addEventListener("click", () => {
       if (!bookingDate) return;
-      const action = button.dataset.bookingDateAction;
       const today = todayIso();
-      let targetDate = today;
-
-      if (action === "tomorrow") {
-        targetDate = addDaysToIso(today, 1);
-      } else if (action === "next") {
-        targetDate = findNextOpenDate(today) || today;
-      }
-
-      bookingDate.value = targetDate;
+      const action = button.dataset.bookingDateAction;
+      bookingDate.value = action === "tomorrow"
+        ? addDaysToIso(today, 1)
+        : action === "next"
+          ? (findNextOpenDate(today) || today)
+          : today;
       updateBookingTimes();
-      bookingDate.focus();
     });
   });
+
   if (bookingClose) bookingClose.addEventListener("click", closeBooking);
   if (bookingModal) {
     bookingModal.addEventListener("click", (event) => {
@@ -316,45 +346,71 @@
     });
   }
 
-  // Confere novamente o horário antes de enviar, evitando seleções inválidas.
   const isBookingSlotValid = (date, time, service) => {
     const schedule = getSchedule(date);
-    if (!schedule || !service || !time) return false;
+    if (!schedule || !time || !service) return false;
     const start = minutesFromTime(time);
     const opening = minutesFromTime(schedule.abertura);
     const closing = minutesFromTime(schedule.fechamento);
-    const match = String(service.duracao || "").match(/\d+/);
-    const duration = match ? Number(match[0]) : 30;
-    if (!Number.isFinite(start) || !Number.isFinite(duration)) return false;
-    if (start < opening || start + duration > closing) return false;
+    const duration = getServiceDuration(service);
+    if (start < opening || start + duration > closing || start % 10 !== 0) return false;
     if (date === todayIso()) {
       const now = new Date();
       if (start <= now.getHours() * 60 + now.getMinutes()) return false;
     }
-    return start % 10 === 0;
+    return true;
   };
 
-  // Envia nome, serviço, data e horário para o WhatsApp.
   if (bookingForm) {
     bookingForm.addEventListener("submit", (event) => {
       event.preventDefault();
+
       const name = bookingName?.value.trim();
       const date = bookingDate?.value;
       const time = bookingTime?.value;
-      const serviceName = bookingService?.value;
-      const service = config.servicos?.find((item) => item.nome === serviceName);
-      const schedule = getSchedule(date);
+      const service = getSelectedService();
 
-      if (!name || !date || !time || !serviceName || !service || !schedule || date < todayIso() || !isBookingSlotValid(date, time, service)) {
-        bookingStatus.textContent = "Revise o serviço, a data e o horário selecionados.";
+      if (!whatsappNumber) {
+        bookingStatus.textContent = "O WhatsApp ainda não foi configurado.";
         return;
       }
 
+      if (!name || !service || !date || !time) {
+        bookingStatus.textContent = "Preencha nome, serviço, data e horário.";
+        return;
+      }
+
+      if (!isBookingSlotValid(date, time, service)) {
+        bookingStatus.textContent = "Esse horário não está disponível. Escolha outro.";
+        updateBookingTimes();
+        return;
+      }
+
+      const duration = getServiceDuration(service);
+      if (isBookingConflict(date, time, duration)) {
+        bookingStatus.textContent = "Esse horário acabou de ser reservado. Escolha outro horário.";
+        updateBookingTimes();
+        return;
+      }
+
+      saveBooking({
+        id: Date.now().toString(),
+        nome: name,
+        servico: service.nome,
+        preco: service.preco || "Consultar",
+        duracao: service.duracao || (duration + " min"),
+        data: date,
+        horario: time,
+        criadoEm: new Date().toISOString()
+      });
+
       const message = [
-        config.whatsappMensagem || "Olá! Gostaria de agendar um horário na barbearia.",
+        "Olá! Gostaria de agendar um horário.",
         "",
         "Nome: " + name,
         "Serviço: " + service.nome,
+        "Preço: " + (service.preco || "Consultar"),
+        "Duração: " + (service.duracao || "Consultar"),
         "Data: " + formatDate(date),
         "Horário: " + time
       ].join("\n");
@@ -364,6 +420,14 @@
       closeBooking();
     });
   }
+
+  document.querySelectorAll("[data-whatsapp-link]").forEach((link) => {
+    link.href = "#agendar";
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      openBooking(link);
+    });
+  });
 
   // ============================================================
   // APLICAÇÃO DOS DADOS CONFIGURÁVEIS
@@ -512,7 +576,11 @@
 
   // LINK DO INSTAGRAM
   document.querySelectorAll("[data-instagram-link]").forEach((link) => {
-    link.href = config.instagramUrl || "#";
+    if (config.instagramUrl) {
+      link.href = config.instagramUrl;
+    } else {
+      link.closest(".contact-item")?.remove();
+    }
   });
 
   // LINK DO GOOGLE MAPS
@@ -524,7 +592,10 @@
   // ============================================================
   // Os cards são criados automaticamente a partir de CONFIG.servicos.
   const servicesList = document.querySelector("#services-list");
-  if (servicesList && Array.isArray(config.servicos)) {
+  if (servicesList) {
+    if (!Array.isArray(config.servicos) || config.servicos.length === 0) {
+      servicesList.innerHTML = '<p class="services-empty">Serviços e preços ainda não informados. Fale conosco pelo WhatsApp para consultar.</p>';
+    } else {
     const fragment = document.createDocumentFragment();
     config.servicos.forEach((service) => {
       const article = document.createElement("article");
@@ -553,10 +624,23 @@
         meta.appendChild(duration);
       }
 
-      article.append(number, title, description, meta);
+      const bookingButton = document.createElement("button");
+      bookingButton.type = "button";
+      bookingButton.className = "button button-small service-booking-button";
+      bookingButton.textContent = "Agendar este serviço";
+      bookingButton.addEventListener("click", () => {
+        openBooking(bookingButton);
+        if (bookingService) {
+          bookingService.value = service.nome || "";
+          updateBookingTimes();
+        }
+      });
+
+      article.append(number, title, description, meta, bookingButton);
       fragment.appendChild(article);
     });
     servicesList.replaceChildren(fragment);
+    }
   }
 
   // ============================================================
@@ -702,6 +786,27 @@
   });
 
   // TECLADO: ESC fecha janelas abertas e o menu; TAB permanece dentro das janelas.
+  const trapFocus = (modal, event) => {
+    if (!modal?.classList.contains("is-open") || event.key !== "Tab") return false;
+    const focusable = Array.from(modal.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => !element.hidden && element.offsetParent !== null);
+    if (!focusable.length) return false;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return true;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+      return true;
+    }
+    return false;
+  };
+
   document.addEventListener("keydown", (event) => {
     if (trapFocus(legalModal, event) || trapFocus(lightbox, event) || trapFocus(bookingModal, event)) return;
 
