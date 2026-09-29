@@ -299,6 +299,12 @@
 
   if (bookingDate) bookingDate.addEventListener("change", updateBookingTimes);
   if (bookingService) bookingService.addEventListener("change", updateBookingTimes);
+  if (bookingTime) bookingTime.addEventListener("change", () => {
+    const service = config.servicos?.find((item) => item.nome === bookingService?.value);
+    if (!bookingSummary || !service || !bookingDate?.value || !bookingTime.value) return;
+    bookingSummary.textContent = "Resumo: " + service.nome + " • " + (service.preco || "Consultar") + " • " + (service.duracao || "Consultar") + " • " + formatDate(bookingDate.value) + " às " + bookingTime.value;
+    bookingSummary.hidden = false;
+  });
 
   bookingDateActions.forEach((button) => {
     button.addEventListener("click", () => {
@@ -572,7 +578,19 @@
         meta.appendChild(duration);
       }
 
-      article.append(number, title, description, meta);
+      const bookingButton = document.createElement("button");
+      bookingButton.type = "button";
+      bookingButton.className = "button button-small service-booking-button";
+      bookingButton.textContent = "Agendar este serviço";
+      bookingButton.addEventListener("click", () => {
+        openBooking(bookingButton);
+        if (bookingService) {
+          bookingService.value = service.nome || "";
+          updateBookingTimes();
+        }
+      });
+
+      article.append(number, title, description, meta, bookingButton);
       fragment.appendChild(article);
     });
     servicesList.replaceChildren(fragment);
