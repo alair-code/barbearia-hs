@@ -183,6 +183,16 @@
       return;
     }
 
+    if (bookingService.value === "__manual__") {
+      bookingTime.disabled = false;
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Horário a combinar pelo WhatsApp";
+      bookingTime.appendChild(placeholder);
+      bookingStatus.textContent = "O serviço ainda não foi cadastrado. O horário será combinado pelo WhatsApp.";
+      return;
+    }
+
     const opening = minutesFromTime(schedule.abertura);
     const closing = minutesFromTime(schedule.fechamento);
     const selectedIsToday = selectedDate === todayIso();
@@ -228,13 +238,6 @@
   // Abre o formulário de agendamento e preenche os serviços disponíveis.
   const openBooking = (trigger) => {
     if (!bookingModal) return;
-    if (!Array.isArray(config.servicos) || config.servicos.length === 0) {
-      if (whatsappNumber) {
-        const message = config.whatsappMensagem || "Olá! Gostaria de saber mais sobre os serviços da barbearia.";
-        window.open("https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
-      }
-      return;
-    }
     activeBookingTrigger = trigger || null;
     bookingModal.classList.add("is-open");
     bookingModal.setAttribute("aria-hidden", "false");
@@ -245,13 +248,18 @@
       placeholder.value = "";
       placeholder.textContent = "Selecione um serviço";
       bookingService.appendChild(placeholder);
-      if (Array.isArray(config.servicos)) {
+      if (Array.isArray(config.servicos) && config.servicos.length) {
         config.servicos.forEach((service) => {
           const option = document.createElement("option");
           option.value = service.nome;
           option.textContent = service.nome + (service.duracao ? " — " + service.duracao : "");
           bookingService.appendChild(option);
         });
+      } else {
+        const option = document.createElement("option");
+        option.value = "__manual__";
+        option.textContent = "Serviço desejado (informar no WhatsApp)";
+        bookingService.appendChild(option);
       }
     }
     if (bookingDate) {
@@ -360,7 +368,12 @@
       const service = config.servicos?.find((item) => item.nome === serviceName);
       const schedule = getSchedule(date);
 
-      if (!name || !date || !time || !serviceName || !service || !schedule || date < todayIso() || !isBookingSlotValid(date, time, service)) {
+      if (!name || !date || !time || !serviceName || date < todayIso()) {
+        bookingStatus.textContent = "Revise o nome, serviço, data e horário selecionados.";
+        return;
+      }
+
+      if (serviceName !== "__manual__" && (!service || !schedule || !isBookingSlotValid(date, time, service))) {
         bookingStatus.textContent = "Revise o serviço, a data e o horário selecionados.";
         return;
       }
@@ -369,12 +382,11 @@
         config.whatsappMensagem || "Olá! Gostaria de agendar um horário na barbearia.",
         "",
         "Nome: " + name,
-        "Serviço: " + service.nome,
+        "Serviço: " + (service?.nome || "A informar pelo cliente"),
         "Data: " + formatDate(date),
-        "Preço: " + (service.preco || "Consultar"),
-        "Duração: " + (service.duracao || "Consultar"),
-        "Data: " + formatDate(date),
-        "Horário: " + time
+        "Preço: " + (service?.preco || "Consultar"),
+        "Duração: " + (service?.duracao || "Consultar"),
+        "Horário: " + (time || "A combinar")
       ].join("\n");
 
       const whatsappUrl = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
