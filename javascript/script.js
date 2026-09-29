@@ -164,6 +164,30 @@
       return;
     }
 
+    if (!bookingService?.value) {
+      bookingTime.disabled = true;
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Selecione um serviço primeiro";
+      bookingTime.appendChild(option);
+      bookingStatus.textContent = "Escolha o serviço para calcular os horários disponíveis.";
+      return;
+    }
+
+    if (bookingService.value === "__manual__") {
+      bookingTime.hidden = true;
+      bookingTime.required = false;
+      bookingTime.disabled = true;
+      if (bookingTimeManual) {
+        bookingTimeManual.hidden = false;
+        bookingTimeManual.required = true;
+      }
+      bookingStatus.textContent = schedule
+        ? "Informe o serviço e escolha o horário desejado. A confirmação será feita pelo WhatsApp."
+        : "Informe o serviço e escolha o horário desejado. O horário será confirmado pelo WhatsApp.";
+      return;
+    }
+
     if (!schedule) {
       bookingTime.disabled = true;
       const option = document.createElement("option");
