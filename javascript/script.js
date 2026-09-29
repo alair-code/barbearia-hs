@@ -48,7 +48,9 @@
   const bookingName = document.querySelector("#booking-name");
   const bookingDate = document.querySelector("#booking-date");
   const bookingService = document.querySelector("#booking-service");
+  const bookingServiceManual = document.querySelector("#booking-service-manual");
   const bookingTime = document.querySelector("#booking-time");
+  const bookingTimeManual = document.querySelector("#booking-time-manual");
   const bookingStatus = document.querySelector("#booking-status");
   const bookingDateContext = document.querySelector("#booking-date-context");
   const bookingSummary = document.querySelector("#booking-summary");
@@ -184,13 +186,23 @@
     }
 
     if (bookingService.value === "__manual__") {
-      bookingTime.disabled = false;
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Horário a combinar pelo WhatsApp";
-      bookingTime.appendChild(placeholder);
-      bookingStatus.textContent = "O serviço ainda não foi cadastrado. O horário será combinado pelo WhatsApp.";
+      bookingTime.hidden = true;
+      bookingTime.required = false;
+      bookingTime.disabled = true;
+      if (bookingTimeManual) {
+        bookingTimeManual.hidden = false;
+        bookingTimeManual.required = true;
+      }
+      bookingStatus.textContent = "Informe o serviço e escolha o horário desejado. A confirmação será feita pelo WhatsApp.";
       return;
+    }
+
+    bookingTime.hidden = false;
+    bookingTime.required = true;
+    if (bookingTimeManual) {
+      bookingTimeManual.hidden = true;
+      bookingTimeManual.required = false;
+      bookingTimeManual.value = "";
     }
 
     const opening = minutesFromTime(schedule.abertura);
@@ -249,6 +261,7 @@
       placeholder.textContent = "Selecione um serviço";
       bookingService.appendChild(placeholder);
       if (Array.isArray(config.servicos) && config.servicos.length) {
+        if (bookingServiceManual) bookingServiceManual.hidden = true;
         config.servicos.forEach((service) => {
           const option = document.createElement("option");
           option.value = service.nome;
@@ -258,8 +271,12 @@
       } else {
         const option = document.createElement("option");
         option.value = "__manual__";
-        option.textContent = "Serviço desejado (informar no WhatsApp)";
+        option.textContent = "Informar serviço manualmente";
         bookingService.appendChild(option);
+        if (bookingServiceManual) {
+          bookingServiceManual.hidden = false;
+          bookingServiceManual.required = true;
+        }
       }
     }
     if (bookingDate) {
@@ -307,12 +324,18 @@
 
   if (bookingDate) bookingDate.addEventListener("change", updateBookingTimes);
   if (bookingService) bookingService.addEventListener("change", updateBookingTimes);
-  if (bookingTime) bookingTime.addEventListener("change", () => {
+  const updateBookingSummary = () => {
     const service = config.servicos?.find((item) => item.nome === bookingService?.value);
-    if (!bookingSummary || !service || !bookingDate?.value || !bookingTime.value) return;
-    bookingSummary.textContent = "Resumo: " + service.nome + " • " + (service.preco || "Consultar") + " • " + (service.duracao || "Consultar") + " • " + formatDate(bookingDate.value) + " às " + bookingTime.value;
+    const serviceName = service?.nome || bookingServiceManual?.value.trim();
+    const selectedTime = bookingTime?.value || bookingTimeManual?.value;
+    if (!bookingSummary || !serviceName || !bookingDate?.value || !selectedTime) return;
+    bookingSummary.textContent = "Resumo: " + serviceName + " • " + (service?.preco || "Consultar") + " • " + (service?.duracao || "Consultar") + " • " + formatDate(bookingDate.value) + " às " + selectedTime;
     bookingSummary.hidden = false;
-  });
+  };
+
+  if (bookingTime) bookingTime.addEventListener("change", updateBookingSummary);
+  if (bookingTimeManual) bookingTimeManual.addEventListener("change", updateBookingSummary);
+  if (bookingServiceManual) bookingServiceManual.addEventListener("input", updateBookingSummary);
 
   bookingDateActions.forEach((button) => {
     button.addEventListener("click", () => {
@@ -363,9 +386,11 @@
       event.preventDefault();
       const name = bookingName?.value.trim();
       const date = bookingDate?.value;
-      const time = bookingTime?.value;
-      const serviceName = bookingService?.value;
-      const service = config.servicos?.find((item) => item.nome === serviceName);
+      const time = bookingTime?.value || bookingTimeManual?.value;
+      const selectedServiceName = bookingService?.value;
+      const manualServiceName = bookingServiceManual?.value.trim();
+      const serviceName = selectedServiceName === "__manual__" ? manualServiceName : selectedServiceName;
+      const service = config.servicos?.find((item) => item.nome === selectedServiceName);
       const schedule = getSchedule(date);
 
       if (!name || !date || !time || !serviceName || date < todayIso()) {
@@ -373,7 +398,7 @@
         return;
       }
 
-      if (serviceName !== "__manual__" && (!service || !schedule || !isBookingSlotValid(date, time, service))) {
+      if (selectedServiceName !== "__manual__" && (!service || !schedule || !isBookingSlotValid(date, time, service))) {
         bookingStatus.textContent = "Revise o serviço, a data e o horário selecionados.";
         return;
       }
@@ -382,7 +407,7 @@
         config.whatsappMensagem || "Olá! Gostaria de agendar um horário na barbearia.",
         "",
         "Nome: " + name,
-        "Serviço: " + (service?.nome || "A informar pelo cliente"),
+        "Serviço: " + (service?.nome || serviceName),
         "Data: " + formatDate(date),
         "Preço: " + (service?.preco || "Consultar"),
         "Duração: " + (service?.duracao || "Consultar"),
