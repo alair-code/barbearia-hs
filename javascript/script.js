@@ -711,6 +711,27 @@
   });
 
   // TECLADO: ESC fecha janelas abertas e o menu; TAB permanece dentro das janelas.
+  const trapFocus = (modal, event) => {
+    if (!modal?.classList.contains("is-open") || event.key !== "Tab") return false;
+    const focusable = Array.from(modal.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => !element.hidden && element.offsetParent !== null);
+    if (!focusable.length) return false;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return true;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+      return true;
+    }
+    return false;
+  };
+
   document.addEventListener("keydown", (event) => {
     if (trapFocus(legalModal, event) || trapFocus(lightbox, event) || trapFocus(bookingModal, event)) return;
 
