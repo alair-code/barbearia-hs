@@ -226,6 +226,13 @@
   // Abre o formulário de agendamento e preenche os serviços disponíveis.
   const openBooking = (trigger) => {
     if (!bookingModal) return;
+    if (!Array.isArray(config.servicos) || config.servicos.length === 0) {
+      if (whatsappNumber) {
+        const message = config.whatsappMensagem || "Olá! Gostaria de saber mais sobre os serviços da barbearia.";
+        window.open("https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
     activeBookingTrigger = trigger || null;
     bookingModal.classList.add("is-open");
     bookingModal.setAttribute("aria-hidden", "false");
@@ -512,7 +519,11 @@
 
   // LINK DO INSTAGRAM
   document.querySelectorAll("[data-instagram-link]").forEach((link) => {
-    link.href = config.instagramUrl || "#";
+    if (config.instagramUrl) {
+      link.href = config.instagramUrl;
+    } else {
+      link.closest(".contact-item")?.remove();
+    }
   });
 
   // LINK DO GOOGLE MAPS
@@ -524,7 +535,10 @@
   // ============================================================
   // Os cards são criados automaticamente a partir de CONFIG.servicos.
   const servicesList = document.querySelector("#services-list");
-  if (servicesList && Array.isArray(config.servicos)) {
+  if (servicesList) {
+    if (!Array.isArray(config.servicos) || config.servicos.length === 0) {
+      servicesList.innerHTML = '<p class="services-empty">Serviços e preços ainda não informados. Fale conosco pelo WhatsApp para consultar.</p>';
+    } else {
     const fragment = document.createDocumentFragment();
     config.servicos.forEach((service) => {
       const article = document.createElement("article");
@@ -557,6 +571,7 @@
       fragment.appendChild(article);
     });
     servicesList.replaceChildren(fragment);
+    }
   }
 
   // ============================================================
