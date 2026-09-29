@@ -58,9 +58,9 @@ button { font: inherit; }
    ========================================================== */
 
 .site-header { position: sticky; top: 0; z-index: 50; background: rgba(11,11,11,.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
-.header-inner { min-height: 104px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.header-inner { min-height: 120px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 800; letter-spacing: -.02em; }
-.brand img { width: 82px; height: 82px; object-fit: contain; }
+.brand img { width: 104px; height: 104px; object-fit: contain; }
 .site-nav { display: flex; align-items: center; gap: 24px; }
 .site-nav > a:not(.button) { position: relative; color: #d2d0ca; text-decoration: none; font-size: .93rem; font-weight: 650; transition: color .2s ease; }
 .site-nav > a:not(.button)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: center; transition: transform .2s ease; }
@@ -236,7 +236,7 @@ button { font: inherit; }
 
 @media (max-width: 900px) {
   .site-nav { gap: 12px; }
-  .header-inner { min-height: 88px; }
+  .header-inner { min-height: 102px; }
   .about-grid, .contact-grid { gap: 45px; }
   .trust-grid { grid-template-columns: repeat(2, 1fr); }
   .trust-grid > div:nth-child(2n) { border-right: 0; }
@@ -265,7 +265,7 @@ button { font: inherit; }
   .booking-date-actions { grid-template-columns: 1fr; }
   .lightbox { padding: 16px; }
   .header-inner { min-height: 88px; }
-  .brand img { width: 72px; height: 72px; }
+  .brand img { width: 90px; height: 90px; }
   .menu-toggle { display: block; }
   .site-nav { position: absolute; top: calc(100% + 1px); left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 10px 14px 18px; background: rgba(11,11,11,.98); border-bottom: 1px solid var(--border); }
   .site-nav.is-open { display: flex; }
@@ -294,8 +294,8 @@ button { font: inherit; }
 
 @media (max-width: 480px) {
   .container { width: min(calc(100% - 22px), var(--container)); }
-  .header-inner { min-height: 82px; }
-  .brand img { width: 66px; height: 66px; }
+  .header-inner { min-height: 92px; }
+  .brand img { width: 80px; height: 80px; }
   .brand { gap: 8px; font-size: .92rem; }
   .hero { min-height: 82vh; background-position: 65% center; }
   .hero-content { padding: 72px 0; }
