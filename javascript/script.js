@@ -51,6 +51,7 @@
   const bookingTime = document.querySelector("#booking-time");
   const bookingStatus = document.querySelector("#booking-status");
   const bookingDateContext = document.querySelector("#booking-date-context");
+  const bookingSummary = document.querySelector("#booking-summary");
   const bookingClose = document.querySelector(".booking-close");
   const bookingDateActions = document.querySelectorAll("[data-booking-date-action]");
   let activeBookingTrigger = null;
@@ -148,6 +149,7 @@
     setBookingDateContext(selectedDate);
     const schedule = getSchedule(selectedDate);
     bookingTime.replaceChildren();
+    if (bookingSummary) { bookingSummary.hidden = true; bookingSummary.textContent = ""; }
     bookingStatus.parentElement?.querySelector(".booking-next-day")?.remove();
 
     if (!selectedDate) {
@@ -362,6 +364,9 @@
         "",
         "Nome: " + name,
         "Serviço: " + service.nome,
+        "Data: " + formatDate(date),
+        "Preço: " + (service.preco || "Consultar"),
+        "Duração: " + (service.duracao || "Consultar"),
         "Data: " + formatDate(date),
         "Horário: " + time
       ].join("\n");
