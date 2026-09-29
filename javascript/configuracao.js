@@ -94,13 +94,15 @@ const CONFIG = {
   // Use null quando a barbearia estiver fechada.
   // Esses horários alimentam tanto a seção de contato quanto o agendamento.
   funcionamento: {
+    // 0 = domingo | 1 = segunda | ... | 6 = sábado
+    // Padrão inicial do template: domingo fechado e segunda a sábado aberto.
     0: null,
-    1: null,
-    2: null,
-    3: null,
-    4: null,
-    5: null,
-    6: null
+    1: { abertura: "09:00", fechamento: "19:00" },
+    2: { abertura: "09:00", fechamento: "19:00" },
+    3: { abertura: "09:00", fechamento: "19:00" },
+    4: { abertura: "09:00", fechamento: "19:00" },
+    5: { abertura: "09:00", fechamento: "19:00" },
+    6: { abertura: "09:00", fechamento: "19:00" }
   },
 
   // ============================================================
