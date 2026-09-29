@@ -113,9 +113,13 @@ const CONFIG = {
   // - duracao: duração usada no cálculo do agendamento.
   // ============================================================
   servicos: [
-    // CADASTRE os serviços reais da Barbearia HS aqui.
-    // Exemplo de estrutura:
-    // { nome: "Corte", descricao: "Corte masculino", preco: "R$ 00,00", duracao: "30 min" }
+    // CADASTRE AQUI os serviços reais da Barbearia HS.
+    // Os preços abaixo ficam como "Consultar" até serem confirmados.
+    { nome: "Corte Masculino", descricao: "Corte personalizado de acordo com seu estilo.", preco: "Consultar", duracao: "30 min" },
+    { nome: "Barba", descricao: "Acabamento e cuidado para uma barba bem alinhada.", preco: "Consultar", duracao: "20 min" },
+    { nome: "Corte + Barba", descricao: "Corte e barba para renovar o visual.", preco: "Consultar", duracao: "50 min" },
+    { nome: "Sobrancelha", descricao: "Acabamento discreto para valorizar o rosto.", preco: "Consultar", duracao: "10 min" },
+    { nome: "Acabamento", descricao: "Detalhes rápidos para manter o corte em dia.", preco: "Consultar", duracao: "10 min" }
   ],
 
     // GALERIA: coloque as fotos do cliente em recursos/imagens/galeria/.
