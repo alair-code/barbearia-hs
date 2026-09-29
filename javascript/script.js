@@ -92,7 +92,14 @@
     if (!isoDate) return null;
     const [year, month, day] = isoDate.split("-").map(Number);
     const date = new Date(year, month - 1, day);
-    return config.funcionamento?.[date.getDay()] || null;
+    const schedule = config.funcionamento?.[date.getDay()] || null;
+    if (!schedule || !schedule.abertura || !schedule.fechamento) return null;
+
+    const opening = minutesFromTime(schedule.abertura);
+    const closing = minutesFromTime(schedule.fechamento);
+    if (!Number.isFinite(opening) || !Number.isFinite(closing) || closing <= opening) return null;
+
+    return schedule;
   };
 
   const getSelectedService = () =>
