@@ -105,6 +105,64 @@
   const getSelectedService = () =>
     config.servicos?.find((service) => service.nome === bookingService?.value) || null;
 
+  // ============================================================
+  // CONTROLE DE CONFLITOS NO FRONTEND
+  // ============================================================
+  // Os agendamentos ficam salvos no navegador via localStorage.
+  // Isso impede conflito entre agendamentos feitos neste mesmo
+  // navegador/dispositivo, sem precisar de banco de dados.
+  const BOOKINGS_STORAGE_KEY = "barbearia-hs-agendamentos";
+
+  const getBookings = () => {
+    try {
+      const raw = localStorage.getItem(BOOKINGS_STORAGE_KEY);
+      const bookings = raw ? JSON.parse(raw) : [];
+      return Array.isArray(bookings) ? bookings : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveBooking = (booking) => {
+    const bookings = getBookings();
+    bookings.push(booking);
+    localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings));
+  };
+
+  const getBookingDuration = (booking) => {
+    const match = String(booking?.duracao || "").match(/\\d+/);
+    return match ? Number(match[0]) : 30;
+  };
+
+  const isBookingConflict = (date, time, duration) => {
+    const start = minutesFromTime(time);
+    const end = start + duration;
+
+    return getBookings().some((booking) => {
+      if (booking.data !== date) return false;
+      const bookingStart = minutesFromTime(booking.horario);
+      const bookingEnd = bookingStart + getBookingDuration(booking);
+      return start < bookingEnd && end > bookingStart;
+    });
+  };
+
+  const getAvailableSlots = (date, schedule, service) => {
+    const opening = minutesFromTime(schedule.abertura);
+    const closing = minutesFromTime(schedule.fechamento);
+    const duration = getServiceDuration(service);
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const slots = [];
+
+    for (let start = opening; start + duration <= closing; start += 10) {
+      if (date === todayIso() && start <= currentMinutes) continue;
+      const slot = String(Math.floor(start / 60)).padStart(2, "0") + ":" + String(start % 60).padStart(2, "0");
+      if (!isBookingConflict(date, slot, duration)) slots.push(slot);
+    }
+
+    return slots;
+  };
+
   const getServiceDuration = (service) => {
     const match = String(service?.duracao || "").match(/\d+/);
     return match ? Number(match[0]) : 30;
@@ -177,17 +235,7 @@
       return;
     }
 
-    const opening = minutesFromTime(schedule.abertura);
-    const closing = minutesFromTime(schedule.fechamento);
-    const duration = getServiceDuration(service);
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const slots = [];
-
-    for (let start = opening; start + duration <= closing; start += 10) {
-      if (selectedDate === todayIso() && start <= currentMinutes) continue;
-      slots.push(String(Math.floor(start / 60)).padStart(2, "0") + ":" + String(start % 60).padStart(2, "0"));
-    }
+    const slots = getAvailableSlots(selectedDate, schedule, service);
 
     if (!slots.length) {
       bookingTime.innerHTML = '<option value="">Nenhum horário disponível</option>';
@@ -210,8 +258,10 @@
     });
 
     bookingTime.disabled = false;
+    const totalBookings = getBookings().filter((booking) => booking.data === selectedDate).length;
     bookingStatus.textContent =
-      "Horários disponíveis: " + schedule.abertura + " às " + schedule.fechamento + ".";
+      "Horários disponíveis: " + schedule.abertura + " às " + schedule.fechamento +
+      (totalBookings ? " • " + totalBookings + " agendamento(s) já registrado(s) neste dia." : "");
   };
 
   const openBooking = (trigger) => {
@@ -335,6 +385,24 @@
         updateBookingTimes();
         return;
       }
+
+      const duration = getServiceDuration(service);
+      if (isBookingConflict(date, time, duration)) {
+        bookingStatus.textContent = "Esse horário acabou de ser reservado. Escolha outro horário.";
+        updateBookingTimes();
+        return;
+      }
+
+      saveBooking({
+        id: Date.now().toString(),
+        nome: name,
+        servico: service.nome,
+        preco: service.preco || "Consultar",
+        duracao: service.duracao || (duration + " min"),
+        data: date,
+        horario: time,
+        criadoEm: new Date().toISOString()
+      });
 
       const message = [
         "Olá! Gostaria de agendar um horário.",
