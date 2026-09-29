@@ -112,7 +112,11 @@ const CONFIG = {
   // - preco: preço exibido no site.
   // - duracao: duração usada no cálculo do agendamento.
   // ============================================================
-  servicos: [],
+  servicos: [
+    // CADASTRE os serviços reais da Barbearia HS aqui.
+    // Exemplo de estrutura:
+    // { nome: "Corte", descricao: "Corte masculino", preco: "R$ 00,00", duracao: "30 min" }
+  ],
 
     // GALERIA: coloque as fotos do cliente em recursos/imagens/galeria/.
   // Informe somente o caminho local da imagem e o texto alternativo.
